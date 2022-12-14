@@ -34,5 +34,5 @@ func (lns *LNodeServer) NodeGetInfo(context.Context, *csi.NodeGetInfoRequest) (*
 	return &csi.NodeGetInfoResponse{NodeId: lns.NodeId}, nil
 }
 func (lns *LNodeServer) NodeGetCapabilities(ctx context.Context, req *csi.NodeGetCapabilitiesRequest) (*csi.NodeGetCapabilitiesResponse, error) {
-	return &csi.CreateVolumeResponse{Volume: lns.}, nil
+	return &csi.NodeGetCapabilitiesResponse{Capabilities: nil}, nil
 }

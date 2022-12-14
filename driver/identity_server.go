@@ -8,7 +8,7 @@ import (
 
 // LIdentityServer 获取认证信息
 type LIdentityServer struct {
-	csi.UnimplementedNodeServer
+	csi.IdentityServer
 	Name    string
 	Version string
 	Status  bool

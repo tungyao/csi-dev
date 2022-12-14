@@ -2,23 +2,25 @@ package driver
 
 import (
 	"context"
+	"github.com/google/uuid"
 	"tungyao/csi-dev/csi"
-	"tungyao/csi-dev/storage"
 )
 
 type LControllerServer struct {
-	storage.LocalStorage
+	Nfs
 	csi.ControllerServer
 	LocalStorageSpaceName string
 }
 
 func (cs *LControllerServer) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
-	space, _ := cs.NewSpace()
-	cs.LocalStorageSpaceName = space.Name
+	uid := uuid.New().String()
+	cs.LocalStorageSpaceName = uid
+	cs.Nfs.mount()
+	defer Nfs.unmount()
 	return &csi.CreateVolumeResponse{
 		Volume: &csi.Volume{
 			CapacityBytes:      req.CapacityRange.LimitBytes,
-			VolumeId:           space.Name,
+			VolumeId:           uid,
 			VolumeContext:      req.GetParameters(),
 			ContentSource:      req.GetVolumeContentSource(),
 			AccessibleTopology: nil,
