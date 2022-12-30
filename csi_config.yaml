@@ -1,0 +1,12 @@
+# 将csi部署一下
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: hello-csi
+provisioner: hello.world.csi
+parameters:
+  server: 192.168.7.78:8000
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+mountOptions:
+  - nfsvers=4.1

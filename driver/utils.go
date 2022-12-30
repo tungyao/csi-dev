@@ -2,6 +2,7 @@ package driver
 
 import (
 	"context"
+	"crypto/md5"
 	"fmt"
 	"google.golang.org/grpc"
 	"k8s.io/klog/v2"
@@ -39,4 +40,11 @@ func LogGRPC(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, h
 		klog.V(level).Infof("GRPC response: %s", resp)
 	}
 	return resp, err
+}
+
+func GetMd516(T []byte) string {
+
+	m5 := md5.New()
+	m5.Write(T)
+	return fmt.Sprintf("%x", m5.Sum(nil))
 }

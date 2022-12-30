@@ -2,7 +2,7 @@ package driver
 
 import (
 	"context"
-	"github.com/google/uuid"
+	"k8s.io/klog/v2"
 	"tungyao/csi-dev/csi"
 )
 
@@ -12,15 +12,19 @@ type LControllerServer struct {
 	LocalStorageSpaceName string
 }
 
+// CreateVolume 创建挂载地址
 func (cs *LControllerServer) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
-	uid := uuid.New().String()
-	cs.LocalStorageSpaceName = uid
-	cs.Nfs.mount()
-	defer Nfs.unmount()
+	cs.LocalStorageSpaceName = req.GetName()
+	err := cs.Nfs.mount(cs.LocalStorageSpaceName)
+	if err != nil {
+		klog.Info(err)
+		return nil, err
+	}
+	defer cs.Nfs.unmount(cs.LocalStorageSpaceName)
 	return &csi.CreateVolumeResponse{
 		Volume: &csi.Volume{
 			CapacityBytes:      req.CapacityRange.LimitBytes,
-			VolumeId:           uid,
+			VolumeId:           cs.LocalStorageSpaceName,
 			VolumeContext:      req.GetParameters(),
 			ContentSource:      req.GetVolumeContentSource(),
 			AccessibleTopology: nil,
@@ -28,11 +32,7 @@ func (cs *LControllerServer) CreateVolume(ctx context.Context, req *csi.CreateVo
 	}, nil
 }
 func (cs *LControllerServer) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
-	space, err := cs.GetSpace(req.VolumeId)
-	if err != nil {
-		return nil, err
-	}
-	space.Free()
+
 	return &csi.DeleteVolumeResponse{}, nil
 }
 
