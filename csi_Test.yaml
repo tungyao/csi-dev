@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: csi-test
+  labels:
+    app: csi-test
+spec:
+  containers:
+    - name: csi-test
+      image: nginx
+      imagePullPolicy: IfNotPresent
+  restartPolicy: Always
+  volumes:
+    - name: csi-nfs
+      persistentVolumeClaim:
+        claimName: csi-pvc-test

@@ -5,7 +5,7 @@ metadata:
   name: hello-csi
 provisioner: hello.world.csi
 parameters:
-  server: 192.168.7.78:8000
+  server: "unix:///home/dong/project/csi-dev/csi.sock"
 reclaimPolicy: Delete
 volumeBindingMode: Immediate
 mountOptions:

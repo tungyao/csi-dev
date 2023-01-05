@@ -2,24 +2,29 @@ package driver
 
 import (
 	"context"
+	"csi-dev/csi"
 	"k8s.io/klog/v2"
-	"tungyao/csi-dev/csi"
 )
 
 type LControllerServer struct {
-	Nfs
+	*Nfs
 	csi.ControllerServer
 	LocalStorageSpaceName string
 }
 
 // CreateVolume 创建挂载地址
 func (cs *LControllerServer) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
+	klog.Info("get CreateVolume")
 	cs.LocalStorageSpaceName = req.GetName()
+
+	// 将nfs挂载到该主机上
 	err := cs.Nfs.mount(cs.LocalStorageSpaceName)
 	if err != nil {
 		klog.Info(err)
 		return nil, err
 	}
+
+	// 创建完成后卸载
 	defer cs.Nfs.unmount(cs.LocalStorageSpaceName)
 	return &csi.CreateVolumeResponse{
 		Volume: &csi.Volume{
@@ -32,6 +37,7 @@ func (cs *LControllerServer) CreateVolume(ctx context.Context, req *csi.CreateVo
 	}, nil
 }
 func (cs *LControllerServer) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
+	klog.Info("get DeleteVolume")
 
 	return &csi.DeleteVolumeResponse{}, nil
 }
