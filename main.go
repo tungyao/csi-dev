@@ -11,9 +11,11 @@ func main() {
 		FirstPath: "nk",
 		Addr:      "192.168.7.78",
 	}
-	ser.Start("unix://home/dong/project/csi-dev/csi.sock", &driver.LIdentityServer{
+	//ser.Start("unix://home/dong/project/csi-dev/csi.sock", &driver.LIdentityServer{
+	ser.Start("tcp://0.0.0.0:9000", &driver.LIdentityServer{
 		Name:    "hello-csi",
 		Version: "hello.world.csi",
+		Status:  true,
 	}, &driver.LControllerServer{
 		Nfs:                   nfs,
 		LocalStorageSpaceName: "",

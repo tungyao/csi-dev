@@ -21,22 +21,27 @@ func (nfs *Nfs) mount(newPath string) error {
 	nfs.Lock()
 	defer nfs.Unlock()
 	// 这个目录是本地目录
-	newerPath := "/temp/" + GetMd516([]byte(newPath))
-	_, err := os.Open(newerPath)
+	newerPath := "/var/tmp/nfs/" + GetMd516([]byte(newPath))
+	_, err := os.Stat(newerPath)
+	isExist := true
+	klog.Info(err)
 	if err != nil {
-		if err != os.ErrExist {
-			return err
+		if os.IsNotExist(err) {
+			isExist = false
 		}
-		return nil
 	}
+	klog.Info("Open dir ", err)
 
 	// 在本地目录创建文件夹
-	err = os.MkdirAll(newPath, 777)
-	if err != nil {
-		return err
+	if isExist == false {
+		err = os.Mkdir(newerPath, 777)
+		klog.Info(err)
+		if err != nil {
+			return err
+		}
+		klog.Info("create dir ", newerPath)
 	}
-
-	// 将nfs挂载到刚刚创建的目录上
+	// 将nfs挂载到刚刚创建的目录上  TODO 目录挂载问题
 	err = exec.Command(fmt.Sprintf("mount -t nfs %s:%s %s", nfs.Addr, "/"+nfs.FirstPath, newerPath)).Start()
 	if err != nil {
 		klog.Info(err)
@@ -52,7 +57,7 @@ func (nfs *Nfs) mount(newPath string) error {
 
 // 需要卸载本地目录 因为目录已经在远程创建好了
 func (nfs *Nfs) unmount(path string) {
-	newerPath := "/temp/" + GetMd516([]byte(path))
+	newerPath := "/var/tmp/nfs/" + GetMd516([]byte(path))
 	err := exec.Command(fmt.Sprintf("unmout -v %s", newerPath))
 	if err != nil {
 		klog.Info(err)

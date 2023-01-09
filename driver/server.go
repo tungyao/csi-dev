@@ -60,14 +60,12 @@ func (s *nonBlockingGRPCServer) serve(endpoint string, ids csi.IdentityServer, c
 	if err != nil {
 		klog.Fatal(err.Error())
 	}
-
 	if proto == "unix" {
 		addr = "/" + addr
 		if err := os.Remove(addr); err != nil && !os.IsNotExist(err) {
 			klog.Fatalf("Failed to remove %s, error: %s", addr, err.Error())
 		}
 	}
-
 	listener, err := net.Listen(proto, addr)
 	if err != nil {
 		klog.Fatalf("Failed to listen: %v", err)
