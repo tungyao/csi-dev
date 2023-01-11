@@ -8,7 +8,7 @@ import (
 func main() {
 	ser := driver.NewNonBlockingGRPCServer()
 	nfs := &driver.Nfs{
-		FirstPath: "nk",
+		FirstPath: "/home/dong/nfs/nk",
 		Addr:      "192.168.7.78",
 	}
 	//ser.Start("unix://home/dong/project/csi-dev/csi.sock", &driver.LIdentityServer{

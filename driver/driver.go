@@ -1,7 +1,6 @@
 package driver
 
 import (
-	"fmt"
 	"k8s.io/klog/v2"
 	"os"
 	"os/exec"
@@ -34,7 +33,7 @@ func (nfs *Nfs) mount(newPath string) error {
 
 	// 在本地目录创建文件夹
 	if isExist == false {
-		err = os.Mkdir(newerPath, 777)
+		err = os.Mkdir(newerPath, 0777)
 		klog.Info(err)
 		if err != nil {
 			return err
@@ -42,13 +41,14 @@ func (nfs *Nfs) mount(newPath string) error {
 		klog.Info("create dir ", newerPath)
 	}
 	// 将nfs挂载到刚刚创建的目录上  TODO 目录挂载问题
-	err = exec.Command(fmt.Sprintf("mount -t nfs %s:%s %s", nfs.Addr, "/"+nfs.FirstPath, newerPath)).Start()
+	out, err := exec.Command("mount", "-o", "rw", "-t", "nfs", nfs.Addr+":"+"/"+nfs.FirstPath, newerPath).Output()
+	klog.Info(string(out))
 	if err != nil {
 		klog.Info(err)
 		return err
 	}
 	// 在刚刚那个目录上创建文件夹
-	if err = os.MkdirAll(newerPath+"/"+newPath, 777); err != os.ErrExist {
+	if err = os.Mkdir(newerPath+"/"+newPath, 0777); err != os.ErrExist {
 		klog.Info(err)
 		return err
 	}
@@ -58,7 +58,7 @@ func (nfs *Nfs) mount(newPath string) error {
 // 需要卸载本地目录 因为目录已经在远程创建好了
 func (nfs *Nfs) unmount(path string) {
 	newerPath := "/var/tmp/nfs/" + GetMd516([]byte(path))
-	err := exec.Command(fmt.Sprintf("unmout -v %s", newerPath))
+	err := exec.Command("unmout", "-v", newerPath)
 	if err != nil {
 		klog.Info(err)
 	}
