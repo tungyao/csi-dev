@@ -16,16 +16,16 @@ type LControllerServer struct {
 func (cs *LControllerServer) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
 	klog.Info("get CreateVolume")
 	cs.LocalStorageSpaceName = req.GetName()
-
+	klog.Info(req.GetName())
 	// 将nfs挂载到该主机上
 	err := cs.Nfs.mount(cs.LocalStorageSpaceName)
+	defer cs.Nfs.unmount(cs.LocalStorageSpaceName)
 	if err != nil {
 		klog.Info(err)
 		return nil, err
 	}
 
 	// 创建完成后卸载
-	defer cs.Nfs.unmount(cs.LocalStorageSpaceName)
 	return &csi.CreateVolumeResponse{
 		Volume: &csi.Volume{
 			CapacityBytes:      req.CapacityRange.LimitBytes,
