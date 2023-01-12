@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: csi-deploy
+  labels:
+    app: csi-deploy
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: csi-deploy
+      labels:
+        app: csi-deploy
+    spec:
+      containers:
+        - name: csi-deploy
+          image: tungyao/csi-dev:0.1
+          imagePullPolicy: IfNotPresent
+          args:
+            - --nodeid=$(KUBE_NODE_NAME)
+          env:
+            - name: KUBE_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: spec.nodeName
+          volumeMounts:
+            - mountPath: /home/dong/nfs/nk
+              name: host
+              subPath:
+      restartPolicy: Always
+      volumes:
+        - name: host
+          hostPath:
+            path: /home/dong/nfs/nk
+        - name: sock-dir
+          hostPath:
+            path: /home/dong
+  selector:
+    matchLabels:
+      app: csi-deploy
+

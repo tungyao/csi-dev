@@ -37,8 +37,7 @@ func (cs *LControllerServer) CreateVolume(ctx context.Context, req *csi.CreateVo
 	}, nil
 }
 func (cs *LControllerServer) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
-	klog.Info("get DeleteVolume")
-
+	klog.Info("get DeleteVolume", req.GetVolumeId())
 	return &csi.DeleteVolumeResponse{}, nil
 }
 

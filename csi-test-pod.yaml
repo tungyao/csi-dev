@@ -9,7 +9,9 @@ spec:
     - name: csi-test
       image: nginx
       imagePullPolicy: IfNotPresent
-      
+      volumeMounts:
+        - mountPath: /www
+          name: csi-nfs
   restartPolicy: Always
   volumes:
     - name: csi-nfs
