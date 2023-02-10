@@ -16,6 +16,7 @@
 #    | |
 # |   g   |
 #     m
+# +-------+
 # 新创建的g会优先放入本地队列 如果放不下 会将本地队列的一般和这个g打乱放入全局g中，还有个关键点 全局队列的g会有1/6的几率被获取到
 # 好像是接触到什么 又好像是什么也没懂 目前看来最大的比变化是 P的引入是最大的一个变化 可以让g和m解除绑定 在很早之前的版本是 GM是绑定状态 耗时的g会影响后面的后面的
 apiVersion: apps/v1
@@ -54,6 +55,7 @@ spec:
             - mountPath: /home/dong/nfs/nk
               name: host
       restartPolicy: Always
+      # 每一个面试官都是不一样的
       volumes:
         - name: host
           hostPath:
