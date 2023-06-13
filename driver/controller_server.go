@@ -46,7 +46,7 @@ func (cs *LControllerServer) CreateVolume(ctx context.Context, req *csi.CreateVo
 
 // DeleteVolume
 func (cs *LControllerServer) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
-	klog.Info("get DeleteVolume", req.GetVolumeId())
+	klog.Infof("get DeleteVolume %+v", req)
 	time.Now().Format(time.RFC1123)
 	return &csi.DeleteVolumeResponse{}, nil
 }
@@ -81,7 +81,7 @@ func (cs *LControllerServer) ControllerGetCapabilities(context.Context, *csi.Con
 			{
 				Type: &csi.ControllerServiceCapability_Rpc{
 					Rpc: &csi.ControllerServiceCapability_RPC{
-						Type: csi.ControllerServiceCapability_RPC_SINGLE_NODE_MULTI_WRITER,
+						Type: csi.ControllerServiceCapability_RPC_PUBLISH_UNPUBLISH_VOLUME,
 					},
 				},
 			},

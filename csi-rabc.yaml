@@ -2,8 +2,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: kvm-csi-driver
-  namespace: csi-dev
-
+  namespace: default
 ---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
@@ -64,7 +63,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: kvm-csi-driver
-    namespace: csi-dev
+    namespace: default
 roleRef:
   kind: ClusterRole
   name: kvm-csi-driver

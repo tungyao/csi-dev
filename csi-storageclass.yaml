@@ -4,5 +4,3 @@ kind: StorageClass
 metadata:
   name: hello-csi
 provisioner: kvm.csi.dianduidian.com
-reclaimPolicy: Delete
-volumeBindingMode: Immediate

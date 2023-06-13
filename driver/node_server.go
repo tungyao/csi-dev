@@ -3,6 +3,7 @@ package driver
 import (
 	"context"
 	"csi-dev/csi"
+	"k8s.io/klog/v2"
 )
 
 // TODO 需要对这些东西进行验证
@@ -17,7 +18,7 @@ type LNodeServer struct {
 func (lns *LNodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolumeRequest) (*csi.NodePublishVolumeResponse, error) {
 	//targetPath := req.GetTargetPath()
 	//lns.Driver.mount()
-
+	klog.Infof("node publish volume %+v", req)
 	return &csi.NodePublishVolumeResponse{}, nil
 }
 func (lns *LNodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpublishVolumeRequest) (*csi.NodeUnpublishVolumeResponse, error) {

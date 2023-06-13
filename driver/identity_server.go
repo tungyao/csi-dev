@@ -18,16 +18,16 @@ type LIdentityServer struct {
 	Status  bool
 }
 
-func (ids *LIdentityServer) GetPluginInfo(context.Context, *csi.GetPluginInfoRequest) (*csi.GetPluginInfoResponse, error) {
-	klog.Info("get GetPluginInfo")
+func (ids *LIdentityServer) GetPluginInfo(ctx context.Context, req *csi.GetPluginInfoRequest) (*csi.GetPluginInfoResponse, error) {
+	klog.Infof("get GetPluginInfo %+v", req)
 	return &csi.GetPluginInfoResponse{
 		Name:          ids.Name,
 		VendorVersion: ids.Version,
 	}, nil
 }
 
-func (ids *LIdentityServer) GetPluginCapabilities(context.Context, *csi.GetPluginCapabilitiesRequest) (*csi.GetPluginCapabilitiesResponse, error) {
-	klog.Info("get GetPluginCapabilities")
+func (ids *LIdentityServer) GetPluginCapabilities(ctx context.Context, req *csi.GetPluginCapabilitiesRequest) (*csi.GetPluginCapabilitiesResponse, error) {
+	klog.Infof("get GetPluginCapabilities %+v", req)
 	return &csi.GetPluginCapabilitiesResponse{
 		Capabilities: []*csi.PluginCapability{
 			{
