@@ -1,19 +1,28 @@
-apiVersion: v1
-kind: Pod
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: csi-test
+  name: nginx-test-csi-pvc
+  namespace: csi-dev
   labels:
-    app: csi-test
+    app: nginx
 spec:
-  containers:
-    - name: csi-test
-      image: nginx
-      imagePullPolicy: IfNotPresent
-      volumeMounts:
-        - mountPath: /www
-          name: csi-nfs
-  restartPolicy: Always
-  volumes:
-    - name: csi-nfs
-      persistentVolumeClaim:
-        claimName: csi-pvc-test
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: nginx
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: data
+              mountPath: "/data"
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: csi-pvc-test

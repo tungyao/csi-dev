@@ -3,8 +3,6 @@ apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   name: hello-csi
-provisioner: hello.world.csi
-parameters:
-  server: "unix:///home/dong/project/csi-dev/csi.sock"
+provisioner: kvm.csi.dianduidian.com
 reclaimPolicy: Delete
 volumeBindingMode: Immediate

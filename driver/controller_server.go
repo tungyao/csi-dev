@@ -4,6 +4,7 @@ import (
 	"context"
 	"csi-dev/csi"
 	"k8s.io/klog/v2"
+	"time"
 )
 
 type LControllerServer struct {
@@ -12,23 +13,29 @@ type LControllerServer struct {
 	LocalStorageSpaceName string
 }
 
-// CreateVolume 创建挂载地址
+var (
+	controllerCaps = []csi.ControllerServiceCapability_RPC_Type{
+		csi.ControllerServiceCapability_RPC_CREATE_DELETE_VOLUME,
+		csi.ControllerServiceCapability_RPC_PUBLISH_UNPUBLISH_VOLUME,
+	}
+)
+
+// CreateVolume Create the mount path
 func (cs *LControllerServer) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
 	klog.Info("get CreateVolume")
 	cs.LocalStorageSpaceName = req.GetName()
 	klog.Info(req.GetName())
-	// 将nfs挂载到该主机上
+	// Mount the nfs
 	err := cs.Nfs.mount(cs.LocalStorageSpaceName)
 	defer cs.Nfs.unmount(cs.LocalStorageSpaceName)
 	if err != nil {
 		klog.Info(err)
 		return nil, err
 	}
-
-	// 创建完成后卸载
+	klog.Infof("%v", req)
 	return &csi.CreateVolumeResponse{
 		Volume: &csi.Volume{
-			CapacityBytes:      req.CapacityRange.LimitBytes,
+			CapacityBytes:      1024 * 10 * 10 * 10 * 10,
 			VolumeId:           cs.LocalStorageSpaceName,
 			VolumeContext:      req.GetParameters(),
 			ContentSource:      req.GetVolumeContentSource(),
@@ -36,8 +43,11 @@ func (cs *LControllerServer) CreateVolume(ctx context.Context, req *csi.CreateVo
 		},
 	}, nil
 }
+
+// DeleteVolume
 func (cs *LControllerServer) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
 	klog.Info("get DeleteVolume", req.GetVolumeId())
+	time.Now().Format(time.RFC1123)
 	return &csi.DeleteVolumeResponse{}, nil
 }
 

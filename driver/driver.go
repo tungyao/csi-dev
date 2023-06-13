@@ -7,20 +7,23 @@ import (
 	"sync"
 )
 
-// nfs相关的操作
+// nfs operations
 
 type Nfs struct {
 	Addr string
 	sync.Mutex
-	FirstPath string // 预挂载目录
+	FirstPath string // pre-mount path
 }
 
-// 这个操作实际上是将远程目录 挂载在本地 然后在本地目录创建文件夹 这个创建的文件夹 自然也会同步在远程
+// Mount the remote path on the local, in fact,
+// and then create a directory on the local.
+//The local directory will also sync to the remote one.
+
 func (nfs *Nfs) mount(newPath string) error {
 	nfs.Lock()
 	defer nfs.Unlock()
-	// 这个目录是本地目录
-	newerPath := "/var/tmp/nfs/" + GetMd516([]byte(newPath))
+	// newerPath is local path
+	newerPath := "/home/dong/nfs/" + GetMd516([]byte(newPath))
 	_, err := os.Stat(newerPath)
 	isExist := true
 	klog.Info(err)
@@ -31,7 +34,7 @@ func (nfs *Nfs) mount(newPath string) error {
 	}
 	klog.Info("Open dir ", err)
 
-	// 在本地目录创建文件夹
+	// create directory in the local
 	if isExist == false {
 		err = os.Mkdir(newerPath, 0777)
 		klog.Info(err)
@@ -40,25 +43,31 @@ func (nfs *Nfs) mount(newPath string) error {
 		}
 		klog.Info("create dir ", newerPath)
 	}
-	// 将nfs挂载到刚刚创建的目录上  TODO 目录挂载问题
-	out, err := exec.Command("mount", "-o", "rw", "-t", "nfs", nfs.Addr+":"+"/"+nfs.FirstPath, newerPath).Output()
-	klog.Info(string(out))
+	klog.Info("nfs remote", nfs.Addr, nfs.FirstPath)
+	// Mount remote path on the local path
+	out, err := exec.Command("mount", nfs.Addr+":"+nfs.FirstPath, newerPath).CombinedOutput()
+	klog.Info(string(out), err)
 	if err != nil {
 		klog.Info(err)
 		return err
 	}
 	// 在刚刚那个目录上创建文件夹
-	if err = os.Mkdir(newerPath+"/"+newPath, 0777); err != os.ErrExist {
-		klog.Info(err)
-		return err
+	_, err = os.Stat(newerPath + "/" + newPath)
+	if err == nil {
+		return nil
+	} else if os.IsNotExist(err) {
+		if err = os.Mkdir(newerPath+"/"+newPath, 0777); err != nil {
+			klog.Info(err)
+			return err
+		}
 	}
 	return nil
 }
 
 // 需要卸载本地目录 因为目录已经在远程创建好了
 func (nfs *Nfs) unmount(path string) {
-	newerPath := "/var/tmp/nfs/" + GetMd516([]byte(path))
-	err := exec.Command("unmout", "-v", newerPath)
+	newerPath := "/home/dong/nfs/" + GetMd516([]byte(path))
+	_, err := exec.Command("umount", newerPath).CombinedOutput()
 	if err != nil {
 		klog.Info(err)
 	}

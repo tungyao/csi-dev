@@ -7,9 +7,10 @@ import (
 	"k8s.io/klog/v2"
 )
 
-// 这整个文件都是定义和返回这个插件的信息
+// This file defines the plugin and returns its information.
 
-// LIdentityServer 获取认证信息
+// Getting identification
+
 type LIdentityServer struct {
 	csi.IdentityServer
 	Name    string
@@ -36,10 +37,18 @@ func (ids *LIdentityServer) GetPluginCapabilities(context.Context, *csi.GetPlugi
 					},
 				},
 			},
+			{
+				Type: &csi.PluginCapability_Service_{
+					Service: &csi.PluginCapability_Service{
+						Type: csi.PluginCapability_Service_VOLUME_ACCESSIBILITY_CONSTRAINTS,
+					},
+				},
+			},
 		},
 	}, nil
 }
 
-func (ids *LIdentityServer) Probe(context.Context, *csi.ProbeRequest) (*csi.ProbeResponse, error) {
+func (ids *LIdentityServer) Probe(ctx context.Context, req *csi.ProbeRequest) (*csi.ProbeResponse, error) {
+	klog.V(4).Infof("Probe: called with args %+v", req)
 	return &csi.ProbeResponse{Ready: &wrappers.BoolValue{Value: ids.Status}}, nil
 }

@@ -1,42 +1,89 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: v1
+kind: Pod
 metadata:
-  name: csi-deploy
+  name: csi-pod
+  namespace: csi-dev
   labels:
-    app: csi-deploy
+    app: csi-pod
 spec:
-  replicas: 1
-  template:
-    metadata:
-      name: csi-deploy
-      labels:
-        app: csi-deploy
-    spec:
-      containers:
-        - name: csi-deploy
-          image: tungyao/csi-dev:0.1
-          imagePullPolicy: IfNotPresent
-          args:
-            - --nodeid=$(KUBE_NODE_NAME)
-          env:
-            - name: KUBE_NODE_NAME
-              valueFrom:
-                fieldRef:
-                  apiVersion: v1
-                  fieldPath: spec.nodeName
-          volumeMounts:
-            - mountPath: /home/dong/nfs/nk
-              name: host
-              subPath:
-      restartPolicy: Always
-      volumes:
-        - name: host
-          hostPath:
-            path: /home/dong/nfs/nk
-        - name: sock-dir
-          hostPath:
-            path: /home/dong
-  selector:
-    matchLabels:
-      app: csi-deploy
-
+  serviceAccountName: kvm-csi-driver
+  containers:
+    - name: csi-pod
+      image: tungyao-csi:v1
+      securityContext:
+        privileged: true
+      volumeMounts:
+        - mountPath: /csi
+          name: plugin-dir
+        - name: kubelet-dir
+          mountPath: /var/lib/kubelet
+          mountPropagation: "Bidirectional"
+        - name: device-dir
+          mountPath: /dev
+    - name: node-driver-registrar
+      image: quay.io/k8scsi/csi-node-driver-registrar:v1.2.0
+      args:
+        - --csi-address=$(ADDRESS)
+        - --kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)
+        - --v=5
+      lifecycle:
+        preStop:
+          exec:
+            command: [ "/bin/sh", "-c", "rm -rf /registration/kvm.csi.dianduidian.com-reg.sock /csi/csi.sock" ]
+      env:
+        - name: ADDRESS
+          value: /csi/csi.sock
+        - name: DRIVER_REG_SOCK_PATH
+          value: /var/lib/kubelet/plugins/kvm.csi.dianduidian.com/csi.sock
+      volumeMounts:
+        - name: plugin-dir
+          mountPath: /csi
+        - name: registration-dir
+          mountPath: /registration
+    - name: liveness-probe
+      image: quay.io/k8scsi/livenessprobe:v1.1.0
+      args:
+        - "--csi-address=/csi/csi.sock"
+        - "--v=5"
+      volumeMounts:
+        - name: plugin-dir
+          mountPath: /csi
+    - name: csi-provisioner
+      image: quay.io/k8scsi/csi-provisioner:v1.3.1
+      args:
+        - "--csi-address=$(ADDRESS)"
+        - "--v=5"
+        - "--feature-gates=Topology=True"
+      env:
+        - name: ADDRESS
+          value: unix:///csi/csi.sock
+      imagePullPolicy: "IfNotPresent"
+    - name: csi-attacher
+      image: quay.io/k8scsi/csi-attacher:v1.2.1
+      args:
+        - "--v=5"
+        - "--csi-address=$(ADDRESS)"
+      env:
+        - name: ADDRESS
+          value: /csi/csi.sock
+      imagePullPolicy: "Always"
+      volumeMounts:
+        - name: plugin-dir
+          mountPath: /csi
+  volumes:
+    - name: kubelet-dir
+      hostPath:
+        path: /var/lib/kubelet
+        type: Directory
+    - name: plugin-dir
+      hostPath:
+        path: /var/lib/kubelet/plugins/kvm.csi.dianduidian.com/
+        type: DirectoryOrCreate
+    - name: registration-dir
+      hostPath:
+        path: /var/lib/kubelet/plugins_registry/
+        type: Directory
+    - name: device-dir
+      hostPath:
+        path: /dev
+        type: Directory

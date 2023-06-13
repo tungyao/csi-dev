@@ -29,7 +29,7 @@ func getLogLevel(method string) int32 {
 }
 
 func LogGRPC(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	level := klog.Level(getLogLevel(info.FullMethod))
+	level := klog.Level(4)
 	klog.V(level).Infof("GRPC call: %s", info.FullMethod)
 	klog.V(level).Infof("GRPC request: %s", req)
 
@@ -37,7 +37,7 @@ func LogGRPC(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, h
 	if err != nil {
 		klog.Errorf("GRPC error: %v", err)
 	} else {
-		klog.V(level).Infof("GRPC response: %s", resp)
+		klog.V(4).Infof("GRPC response: %s", resp)
 	}
 	return resp, err
 }
