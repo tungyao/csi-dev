@@ -1,69 +1,89 @@
-# 将这个东西部署到k8s上
-# gc过程的操作在目前版本是 3色标记和混合写屏障，三色标记 白色 清理对象 黑色 存活对象 灰色 子对象待处理对象
-# 混合写屏障 包括插入写屏障和删除写屏障 意思分别是 在标记期间新增的对象标记为黑色 被删除或者添加引用的对象标记为黑色，
-# 过程是 一旦开启混合写屏障 则将栈上的对象标记为黑色（不需要二次扫描和stw），然后就是前两句话
-# +-------+
-# 接下来是关于协程的东西
-# g在初始化的时候分配的内存大小是2k-4k 栈空间大小是操作系统限制的 一般是8Mb
-# 依次解释名词
-# g 实际的协程
-# m 就是内核线程 不加限制 则和cpu核心数相等
-# p 可以看成一个队列 能够容纳256个g
-# 它们之间的关系是 g要运行就需要绑定m g是从p中获取g的 如下图
-# +-------+
-# |   g   |
-#    | |
-#    | |
-# |   g   |
-#     m
-# +-------+
-# 新创建的g会优先放入本地队列 如果放不下 会将本地队列的一般和这个g打乱放入全局g中，还有个关键点 全局队列的g会有1/6的几率被获取到
-# 好像是接触到什么 又好像是什么也没懂 目前看来最大的比变化是 P的引入是最大的一个变化 可以让g和m解除绑定 在很早之前的版本是 GM是绑定状态 耗时的g会影响后面的后面的
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: v1
+kind: Pod
 metadata:
-  name: csi-deploy
+  name: csi-pod
+  namespace: csi-dev
   labels:
-    app: csi-deploy
-# 线程M想运行任务就需得获取 P，即与P关联。 (依次)
-# 然从 P 的本地队列(LRQ)获取 G
-# 若LRQ中没有可运行的G，M 会尝试从全局队列(GRQ)拿一批G放到P的本地队列，
-# 若全局队列也未找到可运行的G时候，M会随机从其他 P 的本地队列偷一半放到自己 P 的本地队列。
-# 拿到可运行的G之后，M 运行 G，G 执行之后，M 会从 P 获取下一个 G，不断重复下去。
-# 看了这么多大概是知道了些东西 是用来完善调度上的不足
+    app: csi-pod
 spec:
-  replicas: 1
-  template:
-    metadata:
-      name: csi-deploy
-      labels:
-        app: csi-deploy
-    spec:
-      containers:
-        - name: csi-deploy
-          image: tungyao/csi-dev:0.1
-          imagePullPolicy: IfNotPresent
-          args:
-            - --nodeid=$(KUBE_NODE_NAME)
-          env:
-            - name: KUBE_NODE_NAME
-              valueFrom:
-                fieldRef:
-                  apiVersion: v1
-                  fieldPath: spec.nodeName
-          volumeMounts:
-            - mountPath: /home/dong/nfs/nk
-              name: host
-      restartPolicy: Always
-      # 每一个面试官都是不一样的
-      volumes:
-        - name: host
-          hostPath:
-            path: /home/dong/nfs/nk
-        - name: sock-dir
-          hostPath:
-            path: /home/dong
-  selector:
-    matchLabels:
-      app: csi-deploy
-
+  serviceAccountName: kvm-csi-driver
+  containers:
+    - name: csi-pod
+      image: tungyao-csi:v1
+      securityContext:
+        privileged: true
+      volumeMounts:
+        - mountPath: /csi
+          name: plugin-dir
+        - name: kubelet-dir
+          mountPath: /var/lib/kubelet
+          mountPropagation: "Bidirectional"
+        - name: device-dir
+          mountPath: /dev
+    - name: node-driver-registrar
+      image: quay.io/k8scsi/csi-node-driver-registrar:v1.2.0
+      args:
+        - --csi-address=$(ADDRESS)
+        - --kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)
+        - --v=5
+      lifecycle:
+        preStop:
+          exec:
+            command: [ "/bin/sh", "-c", "rm -rf /registration/kvm.csi.dianduidian.com-reg.sock /csi/csi.sock" ]
+      env:
+        - name: ADDRESS
+          value: /csi/csi.sock
+        - name: DRIVER_REG_SOCK_PATH
+          value: /var/lib/kubelet/plugins/kvm.csi.dianduidian.com/csi.sock
+      volumeMounts:
+        - name: plugin-dir
+          mountPath: /csi
+        - name: registration-dir
+          mountPath: /registration
+    - name: liveness-probe
+      image: quay.io/k8scsi/livenessprobe:v1.1.0
+      args:
+        - "--csi-address=/csi/csi.sock"
+        - "--v=5"
+      volumeMounts:
+        - name: plugin-dir
+          mountPath: /csi
+    - name: csi-provisioner
+      image: quay.io/k8scsi/csi-provisioner:v1.3.1
+      args:
+        - "--csi-address=$(ADDRESS)"
+        - "--v=5"
+        - "--feature-gates=Topology=True"
+      env:
+        - name: ADDRESS
+          value: unix:///csi/csi.sock
+      imagePullPolicy: "IfNotPresent"
+    - name: csi-attacher
+      image: quay.io/k8scsi/csi-attacher:v1.2.1
+      args:
+        - "--v=5"
+        - "--csi-address=$(ADDRESS)"
+      env:
+        - name: ADDRESS
+          value: /csi/csi.sock
+      imagePullPolicy: "Always"
+      volumeMounts:
+        - name: plugin-dir
+          mountPath: /csi
+  volumes:
+    - name: kubelet-dir
+      hostPath:
+        path: /var/lib/kubelet
+        type: Directory
+    - name: plugin-dir
+      hostPath:
+        path: /var/lib/kubelet/plugins/kvm.csi.dianduidian.com/
+        type: DirectoryOrCreate
+    - name: registration-dir
+      hostPath:
+        path: /var/lib/kubelet/plugins_registry/
+        type: Directory
+    - name: device-dir
+      hostPath:
+        path: /dev
+        type: Directory

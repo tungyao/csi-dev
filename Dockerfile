@@ -1,4 +1,6 @@
-FROM alpine
-RUN apk add util-linux e2fsgrops
-COPY csi-dev /csi-dev
-ENTRYPOINT ["/csi-dev"]
+FROM ubuntu
+WORKDIR /work
+COPY . /work
+RUN chmod +x /work/app
+RUN mkdir /csi
+CMD ["/work/app"]
