@@ -11,7 +11,6 @@ var (
 
 // TODO this error
 func main() {
-
 	nodeId = flag.String("nodeid", "abc", "")
 	flag.Parse()
 	ser := driver.NewNonBlockingGRPCServer()

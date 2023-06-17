@@ -19,7 +19,7 @@ type LIdentityServer struct {
 }
 
 func (ids *LIdentityServer) GetPluginInfo(ctx context.Context, req *csi.GetPluginInfoRequest) (*csi.GetPluginInfoResponse, error) {
-	klog.Infof("get GetPluginInfo %+v", req)
+	klog.Infof("get GetPluginInfo %#v", req)
 	return &csi.GetPluginInfoResponse{
 		Name:          ids.Name,
 		VendorVersion: ids.Version,
@@ -27,7 +27,7 @@ func (ids *LIdentityServer) GetPluginInfo(ctx context.Context, req *csi.GetPlugi
 }
 
 func (ids *LIdentityServer) GetPluginCapabilities(ctx context.Context, req *csi.GetPluginCapabilitiesRequest) (*csi.GetPluginCapabilitiesResponse, error) {
-	klog.Infof("get GetPluginCapabilities %+v", req)
+	klog.Infof("get GetPluginCapabilities %#v", req)
 	return &csi.GetPluginCapabilitiesResponse{
 		Capabilities: []*csi.PluginCapability{
 			{
@@ -37,18 +37,11 @@ func (ids *LIdentityServer) GetPluginCapabilities(ctx context.Context, req *csi.
 					},
 				},
 			},
-			{
-				Type: &csi.PluginCapability_Service_{
-					Service: &csi.PluginCapability_Service{
-						Type: csi.PluginCapability_Service_VOLUME_ACCESSIBILITY_CONSTRAINTS,
-					},
-				},
-			},
 		},
 	}, nil
 }
 
 func (ids *LIdentityServer) Probe(ctx context.Context, req *csi.ProbeRequest) (*csi.ProbeResponse, error) {
-	klog.V(4).Infof("Probe: called with args %+v", req)
+	klog.V(4).Infof("Probe: called with args %#v", req)
 	return &csi.ProbeResponse{Ready: &wrappers.BoolValue{Value: ids.Status}}, nil
 }

@@ -3,6 +3,8 @@ package driver
 import (
 	"context"
 	"csi-dev/csi"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"k8s.io/klog/v2"
 	"time"
 )
@@ -22,51 +24,50 @@ var (
 
 // CreateVolume Create the mount path
 func (cs *LControllerServer) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
-	klog.Info("get CreateVolume")
+	klog.Infof("get CreateVolume %#v", req)
 	cs.LocalStorageSpaceName = req.GetName()
 	klog.Info(req.GetName())
 	// Mount the nfs
-	err := cs.Nfs.mount(cs.LocalStorageSpaceName)
-	defer cs.Nfs.unmount(cs.LocalStorageSpaceName)
-	if err != nil {
-		klog.Info(err)
-		return nil, err
-	}
-	klog.Infof("%v", req)
+	//err := cs.Nfs.mount(cs.LocalStorageSpaceName)
+	//defer cs.Nfs.unmount(cs.LocalStorageSpaceName)
+	//if err != nil {
+	//	klog.Info(err)
+	//	return nil, err
+	//}
+	klog.Infof("%#v", req)
 	return &csi.CreateVolumeResponse{
 		Volume: &csi.Volume{
-			CapacityBytes:      1024 * 10 * 10 * 10 * 10,
-			VolumeId:           cs.LocalStorageSpaceName,
-			VolumeContext:      req.GetParameters(),
-			ContentSource:      req.GetVolumeContentSource(),
-			AccessibleTopology: nil,
+			CapacityBytes: 1024 * 10 * 10 * 10 * 10,
+			VolumeId:      cs.LocalStorageSpaceName,
+			VolumeContext: req.GetParameters(),
+			ContentSource: req.GetVolumeContentSource(),
 		},
 	}, nil
 }
 
 // DeleteVolume
 func (cs *LControllerServer) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
-	klog.Infof("get DeleteVolume %+v", req)
+	klog.Infof("get DeleteVolume %#v", req)
 	time.Now().Format(time.RFC1123)
 	return &csi.DeleteVolumeResponse{}, nil
 }
 
-//func (cs *LControllerServer) ControllerPublishVolume(context.Context, *csi.ControllerPublishVolumeRequest) (*csi.ControllerPublishVolumeResponse, error) {
-//	return nil, status.Errorf(codes.Unimplemented, "method ControllerPublishVolume not implemented")
-//}
+func (cs *LControllerServer) ControllerPublishVolume(context.Context, *csi.ControllerPublishVolumeRequest) (*csi.ControllerPublishVolumeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ControllerPublishVolume not implemented")
+}
 
-//func (cs *LControllerServer) ControllerUnpublishVolume(context.Context, *csi.ControllerUnpublishVolumeRequest) (*csi.ControllerUnpublishVolumeResponse, error) {
-//	return nil, status.Errorf(codes.Unimplemented, "method ControllerUnpublishVolume not implemented")
-//}
-//func (cs *LControllerServer) ValidateVolumeCapabilities(context.Context, *csi.ValidateVolumeCapabilitiesRequest) (*csi.ValidateVolumeCapabilitiesResponse, error) {
-//	return nil, status.Errorf(codes.Unimplemented, "method ValidateVolumeCapabilities not implemented")
-//}
-//func (cs *LControllerServer) ListVolumes(context.Context, *csi.ListVolumesRequest) (*csi.ListVolumesResponse, error) {
-//	return nil, status.Errorf(codes.Unimplemented, "method ListVolumes not implemented")
-//}
-//func (cs *LControllerServer) GetCapacity(context.Context, *csi.GetCapacityRequest) (*csi.GetCapacityResponse, error) {
-//	return nil, status.Errorf(codes.Unimplemented, "method GetCapacity not implemented")
-//}
+func (cs *LControllerServer) ControllerUnpublishVolume(context.Context, *csi.ControllerUnpublishVolumeRequest) (*csi.ControllerUnpublishVolumeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ControllerUnpublishVolume not implemented")
+}
+func (cs *LControllerServer) ValidateVolumeCapabilities(context.Context, *csi.ValidateVolumeCapabilitiesRequest) (*csi.ValidateVolumeCapabilitiesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ValidateVolumeCapabilities not implemented")
+}
+func (cs *LControllerServer) ListVolumes(context.Context, *csi.ListVolumesRequest) (*csi.ListVolumesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListVolumes not implemented")
+}
+func (cs *LControllerServer) GetCapacity(context.Context, *csi.GetCapacityRequest) (*csi.GetCapacityResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCapacity not implemented")
+}
 
 func (cs *LControllerServer) ControllerGetCapabilities(context.Context, *csi.ControllerGetCapabilitiesRequest) (*csi.ControllerGetCapabilitiesResponse, error) {
 	return &csi.ControllerGetCapabilitiesResponse{
@@ -75,13 +76,6 @@ func (cs *LControllerServer) ControllerGetCapabilities(context.Context, *csi.Con
 				Type: &csi.ControllerServiceCapability_Rpc{
 					Rpc: &csi.ControllerServiceCapability_RPC{
 						Type: csi.ControllerServiceCapability_RPC_CREATE_DELETE_VOLUME,
-					},
-				},
-			},
-			{
-				Type: &csi.ControllerServiceCapability_Rpc{
-					Rpc: &csi.ControllerServiceCapability_RPC{
-						Type: csi.ControllerServiceCapability_RPC_PUBLISH_UNPUBLISH_VOLUME,
 					},
 				},
 			},

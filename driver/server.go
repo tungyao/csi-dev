@@ -3,12 +3,10 @@ package driver
 import (
 	"csi-dev/csi"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
 	"k8s.io/klog/v2"
 	"net"
 	"os"
 	"sync"
-	"time"
 )
 
 // NonBlockingGRPCServer Defines Non blocking GRPC server interfaces
@@ -76,31 +74,12 @@ func (s *nonBlockingGRPCServer) serve(endpoint string, ids csi.IdentityServer, c
 	}
 	server := grpc.NewServer(opts...)
 	s.server = server
-
-	if ids != nil {
-		csi.RegisterIdentityServer(server, ids)
-	}
-	if cs != nil {
-		csi.RegisterControllerServer(server, cs)
-	}
-	if ns != nil {
-		csi.RegisterNodeServer(server, ns)
-	}
-
-	// Used to stop the server while running tests
-	if testMode {
-		s.wg.Done()
-		go func() {
-			// make sure Serve() is called
-			s.wg.Wait()
-			time.Sleep(time.Millisecond * 1000)
-			s.server.GracefulStop()
-		}()
-	}
-
+	csi.RegisterIdentityServer(s.server, ids)
+	csi.RegisterControllerServer(s.server, cs)
+	csi.RegisterNodeServer(s.server, ns)
 	klog.Infof("Listening for connections on address: %#v", listener.Addr())
-	reflection.Register(server)
-	err = server.Serve(listener)
+	//reflection.Register(server)
+	err = s.server.Serve(listener)
 	if err != nil {
 		klog.Fatalf("Failed to serve grpc server: %v", err)
 	}
