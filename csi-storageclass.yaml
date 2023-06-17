@@ -1,6 +1,0 @@
-# 将csi部署一下
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  name: hello-csi
-provisioner: kvm.csi.dianduidian.com
