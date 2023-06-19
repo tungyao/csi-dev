@@ -24,7 +24,7 @@ const (
 )
 
 func NewDriver(nodeID, endpoint string) *Driver {
-	klog.V(4).Infof("Driver: %v version: %v", driverName, version)
+	klog.Infof("Driver: %v version: %v", driverName, version)
 
 	n := &Driver{
 		nodeID:   nodeID,

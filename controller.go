@@ -4,27 +4,56 @@ import (
 	"context"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"k8s.io/klog/v2"
+	"os"
 )
 
 type Controller struct {
 	csi.ControllerServer
+	nfs *Nfs
 }
 
-func (Controller) CreateVolume(ctx context.Context, request *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
+var Volume = make(map[string]string)
+
+// create disk then return volume info
+
+func (c *Controller) CreateVolume(ctx context.Context, request *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
 	klog.Infof("CreateVolume: called with args %#v", request)
 
+	// 远程创建一个目录 create directory on remote
+	dt := c.nfs.provisionalPath()
+	if dt.err != nil { // 错误创建
+		return nil, dt.err
+	}
+	dt.createPath(request.Name)
+	Volume[request.Name] = dt.name
+	// umount nfs and delete local dir
+
+	err := c.nfs.umount(dt.localPath)
+	if err != nil {
+		return nil, err
+	}
 	// 这里先返回一个假数据，模拟我们创建出了一块id为"qcow-1234567"容量为20G的云盘
 	return &csi.CreateVolumeResponse{
 		Volume: &csi.Volume{
-			VolumeId:      "qcow-1234567",
+			VolumeId:      dt.name,
 			CapacityBytes: 0,
 			VolumeContext: request.GetParameters(),
 		},
 	}, nil
 }
 
-func (Controller) DeleteVolume(ctx context.Context, request *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
+func (c *Controller) DeleteVolume(ctx context.Context, request *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
 	klog.Infof("DeleteVolume: called with args %#v", request)
+	dt := c.nfs.provisionalPath(request.VolumeId)
+	if dt.err != nil { // 错误创建
+		return nil, dt.err
+	}
+	// 挂载远程目录
+	c.nfs.mount("", dt.localPath)
+	err := os.Remove(dt.localPath + "/" + request.VolumeId)
+	if err != nil {
+		return nil, err
+	}
 	return &csi.DeleteVolumeResponse{}, nil
 }
 
