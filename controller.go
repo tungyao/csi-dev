@@ -22,13 +22,12 @@ func (c *Controller) CreateVolume(ctx context.Context, request *csi.CreateVolume
 	klog.Infof("CreateVolume: called with args %#v", request)
 
 	// 远程创建一个目录 create directory on remote
-	dt := c.nfs.provisionalPath()
+	dt := c.nfs.provisionalPath(request.Name)
 	if dt.err != nil { // 错误创建
 		klog.Infoln("CreateVolume provisionalPath", dt.err)
 		return nil, dt.err
 	}
 	dt.createPath("/" + request.Name)
-	Volume[dt.name] = request.Name
 	// umount nfs and delete local dir
 
 	err := c.nfs.umount(dt.localPath)
@@ -55,16 +54,20 @@ func (c *Controller) DeleteVolume(ctx context.Context, request *csi.DeleteVolume
 	}
 	// 挂载远程目录
 	//c.nfs.mount("", dt.localPath)
-	err := os.Remove(dt.localPath + "/" + Volume[request.VolumeId])
+	err := os.Remove(dt.localPath + "/" + request.VolumeId)
 	klog.Infoln("DeleteVolume Remove", err)
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		klog.Infoln("DeleteVolume Remove", err)
 		return nil, err
 	}
 	err = c.nfs.umount(dt.localPath)
+
+	// 还需要额外移除node上临时创建的目录
+	err = dt.removeProvisionalPath()
 	return &csi.DeleteVolumeResponse{}, err
 }
 
+// 将volume挂载到容器的目录上去 意思是 多个容器在一个node上 会使用不同地址 需要将刚才创建的挂载到容器对应的目录上去
 func (Controller) ControllerPublishVolume(ctx context.Context, request *csi.ControllerPublishVolumeRequest) (*csi.ControllerPublishVolumeResponse, error) {
 	klog.Infof("ControllerPublishVolume: called with args %#v", request)
 	pvInfo := map[string]string{DevicePathKey: "/dev/sdb"}

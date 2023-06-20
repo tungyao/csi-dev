@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"github.com/google/uuid"
 	"io/fs"
 	"k8s.io/klog/v2"
 	"os"
@@ -36,15 +35,9 @@ func (n *Nfs) mount(remote, local string) {
 }
 
 // 将目录挂载到本地一个临时目录
-func (n *Nfs) provisionalPath(ud ...string) *NfsDt {
-	var localRandom string
-	if len(ud) > 0 {
-		localRandom = ud[0]
-	} else {
-		localRandom = uuid.New().String()
-	}
-
+func (n *Nfs) provisionalPath(localRandom string) *NfsDt {
 	err := os.Mkdir("/mnt/"+localRandom, 777)
+	klog.Infoln("provisionalPath", err)
 	if err != nil && !errors.Is(err, fs.ErrExist) {
 		return &NfsDt{
 			err: err,
@@ -60,6 +53,16 @@ func (n *Nfs) provisionalPath(ud ...string) *NfsDt {
 
 func (n *Nfs) umount(path string) error {
 	err := exec.Command("umount", path).Run()
+	if err != nil {
+		klog.Errorln("删除目录错误", err)
+		return err
+	}
+	return nil
+}
+
+// 移除临时创建的挂载目录
+func (n *NfsDt) removeProvisionalPath() error {
+	err := os.Remove(n.localPath)
 	if err != nil {
 		klog.Errorln("删除目录错误", err)
 		return err
