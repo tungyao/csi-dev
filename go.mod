@@ -1,4 +1,4 @@
-module csi-dev-renew
+module csi-dev
 
 go 1.19
 

@@ -1,5 +1,5 @@
-FROM ubuntu
+FROM ubuntu-nfs-common
 WORKDIR /work
 COPY . .
-RUN chmod +x /work/csi-dev-renew
-ENTRYPOINT ["/work/csi-dev-renew"]
+RUN chmod +x /work/csi-dev
+ENTRYPOINT ["/work/csi-dev"]

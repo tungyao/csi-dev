@@ -1,7 +1,9 @@
 package main
 
 import (
+	"errors"
 	"github.com/google/uuid"
+	"io/fs"
 	"k8s.io/klog/v2"
 	"os"
 	"os/exec"
@@ -43,7 +45,7 @@ func (n *Nfs) provisionalPath(ud ...string) *NfsDt {
 	}
 
 	err := os.Mkdir("/mnt/"+localRandom, 777)
-	if err != nil {
+	if err != nil && !errors.Is(err, fs.ErrExist) {
 		return &NfsDt{
 			err: err,
 		}

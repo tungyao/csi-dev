@@ -25,7 +25,8 @@ spec:
           name: csi-data-dir
         - mountPath: /dev
           name: dev-dir
-
+        - mountPath: /mnt
+          name: mnt
 
     - name: provisioner
       image: registry.k8s.io/sig-storage/csi-provisioner:v3.3.1
@@ -109,3 +110,7 @@ spec:
         path: /dev
         type: Directory
       name: dev-dir
+    - hostPath:
+        path: /home/dong/nfs
+        type: Directory
+      name: mnt

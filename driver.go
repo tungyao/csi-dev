@@ -36,7 +36,9 @@ func NewDriver(nodeID, endpoint string) *Driver {
 
 func (d *Driver) Run() {
 
-	ctl := &Controller{}
+	ctl := &Controller{
+		nfs: NewNfs("192.168.7.102", "/mnt/nfs_share"),
+	}
 	identity := &IdentityServer{}
 	node := &NodeServer{}
 
