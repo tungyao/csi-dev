@@ -6,14 +6,36 @@ metadata:
     app: nfs-test-pod
 spec:
   containers:
-    - name: nfs-test-pod
+    - name: nginx
       image: nginx
       imagePullPolicy: IfNotPresent
       volumeMounts:
-        - mountPath: /var/www
+        - mountPath: /usr/share/nginx/html
+          name: nfs
+    - name: busybox
+      image: busybox
+      imagePullPolicy: IfNotPresent
+      command: ["sh","-c","sleep 3600"]
+      volumeMounts:
+        - mountPath: /mnt
           name: nfs
   restartPolicy: Always
   volumes:
     - name: nfs
       persistentVolumeClaim:
         claimName: pvc
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nfs-test-pod
+spec:
+  selector:
+    app: nfs-test-pod
+  ports:
+    - protocol: TCP
+      port: 80
+      nodePort: 30080
+  type: NodePort

@@ -6,10 +6,14 @@ docker-no-cachge:
 deploy:
 	kubectl apply -f deploy.yaml
 delete:
-	kubectl delete po nfs
+	kubectl delete -f deploy.yaml
 logs:
 	kubectl logs nfs -f
 pvc:
 	kubectl apply -f pvc.yaml
 pvc-delete:
 	kubectl delete pvc pvc
+pod:
+	kubectl apply -f pod.yaml
+pod-delete:
+	kubectl delete -f pod.yaml

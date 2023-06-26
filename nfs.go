@@ -25,13 +25,15 @@ func NewNfs(link string, bashPath string) *Nfs {
 }
 
 // 将远程目录挂载到本地指定目录
-func (n *Nfs) mount(remote, local string) {
+func (n *Nfs) mount(remote, local string) error {
 
-	err := exec.Command("mount", "-t", "nfs", n.ip+":"+n.bashPath+remote, local).Run()
+	out, err := exec.Command("mount", "-t", "nfs", n.ip+":"+n.bashPath+remote, local).CombinedOutput()
+	klog.Infoln("mount", "-t", "nfs", n.ip+":"+n.bashPath+remote, local)
 	if err != nil {
-		klog.Errorln("挂载目录错误", n.ip, n.bashPath, local)
-		return
+		klog.Infoln("挂载目录错误", n.ip, n.bashPath, local, string(out))
+		return err
 	}
+	return nil
 }
 
 // 将目录挂载到本地一个临时目录
@@ -52,10 +54,9 @@ func (n *Nfs) provisionalPath(localRandom string) *NfsDt {
 }
 
 func (n *Nfs) umount(path string) error {
-	err := exec.Command("umount", path).Run()
+	out, err := exec.Command("umount", path).CombinedOutput()
 	if err != nil {
-		klog.Errorln("删除目录错误", err)
-		return err
+		klog.Infoln("umount目录错误", string(out))
 	}
 	return nil
 }
@@ -64,7 +65,7 @@ func (n *Nfs) umount(path string) error {
 func (n *NfsDt) removeProvisionalPath() error {
 	err := os.Remove(n.localPath)
 	if err != nil {
-		klog.Errorln("删除目录错误", err)
+		klog.Infoln("删除目录错误", err)
 		return err
 	}
 	return nil

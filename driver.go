@@ -40,7 +40,9 @@ func (d *Driver) Run() {
 		nfs: NewNfs("192.168.7.102", "/mnt/nfs_share"),
 	}
 	identity := &IdentityServer{}
-	node := &NodeServer{}
+	node := &NodeServer{
+		nfs: NewNfs("192.168.7.102", "/mnt/nfs_share"),
+	}
 
 	opts := []grpc.ServerOption{
 		grpc.UnaryInterceptor(logGRPC),

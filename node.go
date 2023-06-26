@@ -4,10 +4,12 @@ import (
 	"context"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"k8s.io/klog/v2"
+	"os"
 )
 
 type NodeServer struct {
 	csi.NodeServer
+	nfs *Nfs
 }
 
 // NodeStageVolume intro: create path on host and mount storage volume at this path
@@ -18,18 +20,24 @@ func (n *NodeServer) NodeStageVolume(ctx context.Context, request *csi.NodeStage
 
 func (n *NodeServer) NodeUnstageVolume(ctx context.Context, request *csi.NodeUnstageVolumeRequest) (*csi.NodeUnstageVolumeResponse, error) {
 	klog.Infof("NodeUnstageVolume: called with args %#v", request)
+
 	return &csi.NodeUnstageVolumeResponse{}, nil
 }
 
+// NodePublishVolume mount the volume
 func (n *NodeServer) NodePublishVolume(ctx context.Context, request *csi.NodePublishVolumeRequest) (*csi.NodePublishVolumeResponse, error) {
 	klog.Infof("NodePublishVolume: called with args %#v", request)
-	return &csi.NodePublishVolumeResponse{}, nil
+	err := os.MkdirAll(request.TargetPath, 775)
+	klog.Infoln(err)
+	err = n.nfs.mount("/"+request.VolumeId, request.TargetPath)
+	return &csi.NodePublishVolumeResponse{}, err
 
 }
 
 func (n *NodeServer) NodeUnpublishVolume(ctx context.Context, request *csi.NodeUnpublishVolumeRequest) (*csi.NodeUnpublishVolumeResponse, error) {
 	klog.Infof("NodeUnpublishVolume: called with args %#v", request)
-	return &csi.NodeUnpublishVolumeResponse{}, nil
+	err := n.nfs.umount(request.TargetPath)
+	return &csi.NodeUnpublishVolumeResponse{}, err
 
 }
 
@@ -49,10 +57,17 @@ func (n *NodeServer) NodeGetCapabilities(ctx context.Context, request *csi.NodeG
 	klog.Infof("NodeGetCapabilities: called with args %#v", request)
 	return &csi.NodeGetCapabilitiesResponse{
 		Capabilities: []*csi.NodeServiceCapability{
+			//{
+			//	Type: &csi.NodeServiceCapability_Rpc{
+			//		Rpc: &csi.NodeServiceCapability_RPC{
+			//			Type: csi.NodeServiceCapability_RPC_STAGE_UNSTAGE_VOLUME,
+			//		},
+			//	},
+			//},
 			{
 				Type: &csi.NodeServiceCapability_Rpc{
 					Rpc: &csi.NodeServiceCapability_RPC{
-						Type: csi.NodeServiceCapability_RPC_STAGE_UNSTAGE_VOLUME,
+						Type: csi.NodeServiceCapability_RPC_SINGLE_NODE_MULTI_WRITER,
 					},
 				},
 			},

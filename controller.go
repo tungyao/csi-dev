@@ -35,7 +35,6 @@ func (c *Controller) CreateVolume(ctx context.Context, request *csi.CreateVolume
 		klog.Infoln("CreateVolume umount", err)
 		return nil, err
 	}
-	// 这里先返回一个假数据，模拟我们创建出了一块id为"qcow-1234567"容量为20G的云盘
 	return &csi.CreateVolumeResponse{
 		Volume: &csi.Volume{
 			VolumeId:      dt.name,
@@ -54,7 +53,7 @@ func (c *Controller) DeleteVolume(ctx context.Context, request *csi.DeleteVolume
 	}
 	// 挂载远程目录
 	//c.nfs.mount("", dt.localPath)
-	err := os.Remove(dt.localPath + "/" + request.VolumeId)
+	err := os.RemoveAll(dt.localPath + "/" + request.VolumeId)
 	klog.Infoln("DeleteVolume Remove", err)
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		klog.Infoln("DeleteVolume Remove", err)
@@ -64,14 +63,14 @@ func (c *Controller) DeleteVolume(ctx context.Context, request *csi.DeleteVolume
 
 	// 还需要额外移除node上临时创建的目录
 	err = dt.removeProvisionalPath()
-	return &csi.DeleteVolumeResponse{}, err
+	return &csi.DeleteVolumeResponse{}, nil
 }
 
-// 将volume挂载到容器的目录上去 意思是 多个容器在一个node上 会使用不同地址 需要将刚才创建的挂载到容器对应的目录上去
+// ControllerPublishVolume 附加卷 在nfs可以不做任何操作
 func (Controller) ControllerPublishVolume(ctx context.Context, request *csi.ControllerPublishVolumeRequest) (*csi.ControllerPublishVolumeResponse, error) {
 	klog.Infof("ControllerPublishVolume: called with args %#v", request)
-	pvInfo := map[string]string{DevicePathKey: "/dev/sdb"}
-	return &csi.ControllerPublishVolumeResponse{PublishContext: pvInfo}, nil
+
+	return &csi.ControllerPublishVolumeResponse{}, nil
 }
 
 func (Controller) ControllerUnpublishVolume(ctx context.Context, request *csi.ControllerUnpublishVolumeRequest) (*csi.ControllerUnpublishVolumeResponse, error) {
@@ -97,7 +96,7 @@ func (Controller) GetCapacity(ctx context.Context, request *csi.GetCapacityReque
 var (
 	controllerCaps = []csi.ControllerServiceCapability_RPC_Type{
 		csi.ControllerServiceCapability_RPC_CREATE_DELETE_VOLUME,
-		csi.ControllerServiceCapability_RPC_PUBLISH_UNPUBLISH_VOLUME,
+		csi.ControllerServiceCapability_RPC_SINGLE_NODE_MULTI_WRITER,
 	}
 )
 
