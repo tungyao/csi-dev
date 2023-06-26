@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox
+  labels:
+    app: ubuntu
+spec:
+  containers:
+    - name: busybox
+      securityContext:
+        privileged: true
+      image: ubuntu
+      imagePullPolicy: IfNotPresent
+      command: [ 'sh', '-c', "echo 'nameserver 192.168.7.1' >> /etc/resolv.conf && sleep 3600" ]
+      volumeMounts:
+        - mountPath: /home/mount
+          name: nfs
+  restartPolicy: Always
+  volumes:
+    - name: nfs
+      hostPath:
+        path: /home/dong/nfs

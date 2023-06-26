@@ -1,6 +1,5 @@
-FROM ubuntu
+FROM ubuntu-nfs-common
 WORKDIR /work
-COPY . /work
-RUN chmod +x /work/app
-RUN mkdir /csi
-CMD ["/work/app"]
+COPY . .
+RUN chmod +x /work/csi-dev
+ENTRYPOINT ["/work/csi-dev"]
